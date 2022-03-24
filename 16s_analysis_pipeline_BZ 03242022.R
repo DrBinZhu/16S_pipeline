@@ -1,6 +1,11 @@
 ##### install packages #####
 ip <- as.data.frame(installed.packages())
 ip <- ip$Package
+
+if (sum(ip == "rstudioapi") == 0) {
+  install.packages("rstudioapi")
+}
+
 if (sum(ip == "vegan") == 0) {
   install.packages("vegan")
 }
