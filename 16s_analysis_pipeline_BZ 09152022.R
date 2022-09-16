@@ -29,7 +29,7 @@ if (sum(ip == "limma") == 0) {
 }
 
 if (sum(ip == "GUniFrac") == 0) {
-  install.packages("GUniFrac")
+  BiocManager::install("GUniFrac")
 }
 
 if (sum(ip == "tidyr") == 0) {
@@ -37,7 +37,7 @@ if (sum(ip == "tidyr") == 0) {
 }
 
 if (sum(ip == "compositions") == 0) {
-  install.packages("compositions")
+  BiocManager::install("compositions")
 }
 
 if (sum(ip == "reshape2") == 0) {
@@ -45,7 +45,7 @@ if (sum(ip == "reshape2") == 0) {
 }
 
 if (sum(ip == "cp4p") == 0) {
-  install.packages("cp4p")
+  BiocManager::install("cp4p")
 }
 
 if (sum(ip == "ggplot2") == 0) {
@@ -53,7 +53,8 @@ if (sum(ip == "ggplot2") == 0) {
 }
 
 if (sum(ip == "Hmisc") == 0) {
-  install.packages("Hmisc")
+  BiocManager::install("Hmisc")
+
 }
 
 if (sum(ip == "Matrix") == 0) {
@@ -65,7 +66,7 @@ if (sum(ip == "corrplot") == 0) {
 }
 
 if (sum(ip == "pheatmap") == 0) {
-  install.packages("pheatmap")
+  BiocManager::install("pheatmap")
 }
 
 if (sum(ip == "RColorBrewer") == 0) {
@@ -81,7 +82,6 @@ if (sum(ip == "ALDEx2") == 0) {
     install.packages("BiocManager")
   BiocManager::install("ALDEx2")
 }
-
 
 ##### input data and functions #####
 # read data
