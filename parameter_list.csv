@@ -1,0 +1,21 @@
+﻿parameter,value,annotation,figure
+parameter_1,3,alpha_width,alpha
+parameter_2,2,alpha_height,alpha
+parameter_3,3,NMDS_width,beta
+parameter_4,3,NMDS_height,beta
+parameter_5,8,bar_width,bar
+parameter_6,3,bar_height,bar
+parameter_7,8,abundance_width,relative abundance change
+parameter_8,8,abundance_height,relative abundance change
+parameter_9,12,network_width,network
+parameter_10,12,network_height,network
+parameter_11,8,network_abundant_taxa_width,network
+parameter_12,8,network_abundant_taxa_height,network
+parameter_18,5,network_pheatmap_fontsize,network
+parameter_19,50,network_pheatmap_treeheight,network
+parameter_20,spearman,"network_pheatmap_correlation = c(""pearson"",""spearman""))",network
+parameter_13,20,show 20 most abundant taxa in the heatmap,heatmap
+parameter_14,0.3,vagitype definition (predominated taxon with relative abundance no less than 30%),heatmap
+parameter_15,10,heatmap_width,heatmap
+parameter_16,4,heatmap_height,heatmap
+parameter_17,5,vagitype number shown in the heatmap,heatmap
