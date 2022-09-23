@@ -1,4 +1,4 @@
-# Automatic analysis on 16s rRNA sequencing data
+# Automatic analysis on 16s rRNA sequencing data edited by Dr. Bin Zhu at VCU.
 
 # Please see the example files and modify the formate of your input.
 # Please change the names to the input files to 'reads_table.csv' and 'metadata.csv'.
