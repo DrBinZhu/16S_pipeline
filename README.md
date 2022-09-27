@@ -3,6 +3,8 @@
 # How to use
 Please see the example files and modify the formate of your input, change the names to the input files to 'reads_table.csv' and 'metadata.csv'. Windows users need to move the '16s_analysis_pipeline_BZ' folder out of download folder before running the scripts. Open '16s_analysis_pipeline_*.R' by Rstudio, select all the commands, and click run. You need to input a control name for each comparison.
 
+Sample_IDs in 'reads_table.csv' can be put in either rows or columns, and the order of the Sample_IDs are not necessary to be the same as those in 'metadata.csv'. Additional samples in 'reads_table.csv' do not impact the analysis. Just make sure that all the samples in 'metadata.csv' exist in 'reads_table.csv'.
+
 # Methods
 Taxa with at least 0.1% (or 0.01%) relative abundance in at least 5% (or 15%), respectively, of the samples will be kept in the feature table of the 16S rRNA profiles. Samples in the feature table with a total sample reads less than 5,000 will be excluded. 
 
