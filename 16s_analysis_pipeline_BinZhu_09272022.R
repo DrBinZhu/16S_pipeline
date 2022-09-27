@@ -103,6 +103,11 @@ if (sum(ip == "ALDEx2") == 0) {
   }
   
   keep = colnames(reads_table_all) %in% row.names(metadata_all)
+  if (length(keep) != length(row.names(metadata_all))) {
+    print('Sample numbers are not consistent in the metadata and the reads table')
+    stop()
+  }
+  
   reads_table_all = reads_table_all[,keep]
   reads_table_all = reads_table_all[row.names(metadata_all)]
   
