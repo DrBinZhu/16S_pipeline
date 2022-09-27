@@ -805,14 +805,10 @@ if (sum(ip == "ALDEx2") == 0) {
   
   ######### diffential abundance ### dif_abundance; sample in column; paired text or not; change order of species; fold change threshold; if style = 1, give dot plot, else give box plot ####################
   dif_abundance <- function(reads_table,metadata, pvalue_th = 0.05, fold_change_th = 1, paired_test = F, order_reverse = F, style = 1, order = NA) {
-    # style =1
-    # reads_table= cts
-    # metadata=as.character(metadata_virus_PTB$Delivery)
-    # paired_test = F
-    # order_reverse = F
-    # style =2 
-    # order = c('TB','PTB')
-    # fold_change_th = 1
+ 
+    if (!is.na(order)[1]) {
+      metadata = factor(metadata, levels = order)
+    }
     
     conds <- metadata
     
