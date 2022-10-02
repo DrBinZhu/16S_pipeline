@@ -5,7 +5,7 @@ Please see the example files and modify the formate of your input, change the na
 
 Sample_IDs in 'reads_table.csv' can be put in either rows or columns, and the order of the Sample_IDs are not necessary to be the same as those in 'metadata.csv'. Additional samples in 'reads_table.csv' do not impact the analysis. Just make sure that all the samples in 'metadata.csv' exist in 'reads_table.csv'.
 
-Several parameters can be changed in the 'parameter_list.csv' to modift your output.
+Several parameters can be changed in the 'parameter_list.csv' to modify your output.
 
 # Methods
 Taxa with at least 0.1% (or 0.01%) relative abundance in at least 5% (or 15%), respectively, of the samples will be kept in the feature table of the 16S rRNA profiles. Samples in the feature table with a total sample reads less than 5,000 will be excluded. 
