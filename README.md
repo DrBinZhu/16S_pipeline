@@ -1,4 +1,4 @@
-# Automatic analysis on 16s rRNA sequencing data edited by Dr. Bin Zhu at VCU.
+# Automatic analysis of 16S rRNA sequencing data edited by Dr. Bin Zhu at VCU.
 
 # How to use
 Please see the example files and modify the formate of your input, change the names of the input files to 'reads_table.csv' and 'metadata.csv'. Windows users need to move the '16s_analysis_pipeline_BZ' folder out of download folder before running the scripts. Open '16s_analysis_pipeline_*.R' by Rstudio, select all the commands, and click run. You need to input a control name for each comparison. 
