@@ -5,7 +5,6 @@ parameter_1,3,alpha_width,alpha
 parameter_2,2,alpha_height,alpha
 parameter_5,8,bar_width,bar
 parameter_6,3,bar_height,bar
-parameter_28,Yes,Vaginal microbiome? Yes/No,bar
 parameter_3,4,NMDS_width,beta
 parameter_4,3,NMDS_height,beta
 parameter_24,1,cores used in calculating relative abundance ,cores
