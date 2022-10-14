@@ -233,7 +233,7 @@ if (sum(ip == "ALDEx2") == 0) {
     
     alpha.ovserved_OTU = ggplot(metadata, aes(x=factor, y=alpha.ovserved_OTU)) +
       geom_boxplot(aes(fill = factor),outlier.shape=NA) +
-      labs(x = NULL, y = "Observed OTU", fill=factor_name)+ 
+      labs(x = NULL, y = "Observed number of taxa", fill=factor_name)+ 
       theme(axis.title = element_text(size = 7), 
             axis.text = element_text(size = 7), 
             axis.text.x=element_blank(),
