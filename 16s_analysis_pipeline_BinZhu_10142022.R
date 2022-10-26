@@ -357,7 +357,7 @@ if (sum(ip == "ALDEx2") == 0) {
       within_dis = within_dis[keep,]
       #  within_dis$value = as.numeric(as.character(within_dis$value))
       
-      if (!is.na(order)) {
+      if (!is.na(order)[1]) {
         within_dis$Source = as.factor(within_dis$Source)
         within_dis$Source = factor(within_dis$Source, levels= order)
       }
