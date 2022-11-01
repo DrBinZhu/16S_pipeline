@@ -16,5 +16,5 @@ To generate a heatmap, the feature table of the 16S rRNA profiles will be conver
 
 To measure bacterial interaction, the feature table of the 16S rRNA profiles will be normalized by the centered log-ratio transformation. The association between each taxa dyad will be measured by the Spearman’s correlation. The coefficient and significance of a correlation will be quantified by an R- and P-value, respectively. The P-values will be adjusted by the Benjamini and Hochberg procedure using the ‘adjust.p’ function in the ‘cp4p’ package in R. The R-values with matched adjusted P-values larger than 0.05 will be replaced by zeros. Taxa in the VMB will be clustered according to the adjusted R-values of the Spearman’s correlation using the ‘pheatmap’ function with default settings in R. For a network with only abundant taxa, only Taxa with at least 10% (or 1%) relative abundance in at least 5% (or 15%), respectively, of the samples will be kept in the feature table of the 16S rRNA profiles. All other steps are the same. 
 
-# Citation
+# Please cite this paper if this pipeline is useful.
 Zhu, B., Diachok, C., Edupuganti, L., Edwards, D. J., Donowitz, J. R., Tossas, K., ... & Buck, G. A. The Utility of Voided Urine Samples as a Proxy for the Vaginal Microbiome and for the Prediction of Bacterial Vaginosis. Infectious Microbes & Diseases, 10-1097.
