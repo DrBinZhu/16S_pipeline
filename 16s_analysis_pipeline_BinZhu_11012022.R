@@ -193,8 +193,8 @@ if (sum(ip == "ALDEx2") == 0) {
     alpha.evenness <- alpha.shannon_diversity/log(specnumber(reads_table))
     alpha.ovserved_OTU <- data.frame(colSums(t(reads_table) != 0))
     
-    alpha = as.data.frame(matrix(data = NA,ncol=3,nrow = nrow(reads_table)))
-    colnames(alpha) = c('alpha.shannon','alpha.evenness','alpha.ovserved_OTU')
+    alpha = data.frame(alpha.shannon = alpha.shannon_diversity, alpha.evenness = alpha.evenness,
+                       alpha.ovserved_OTU = alpha.ovserved_OTU)
     
     alpha$alpha.shannon <- alpha.shannon_diversity$diversity.reads_table.
     alpha$alpha.evenness <- alpha.evenness$diversity.reads_table.
