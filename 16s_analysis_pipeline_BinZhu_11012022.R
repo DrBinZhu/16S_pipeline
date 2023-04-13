@@ -1,4 +1,4 @@
-# Edited by Dr. Bin Zhu at Virginia Commonwealth University
+# edited by Dr. Bin Zhu at Virginia Commonwealth University
 ##### install packages #####
 ip <- as.data.frame(installed.packages())
 ip <- ip$Package
@@ -538,14 +538,7 @@ if (sum(ip == "ALDEx2") == 0) {
   heatmap_plot <- function(reads_table, metadata, type_th = 0.1, vagitype_num = 5, abundant_taxa_number = 20, width=18, height=8) { # pass proportion data, samples on columns, taxa on rows.
     # reads_table = reads_table_all
     # metadata = metadata_all
-    reads_table_abundance <- matrix(data =0, ncol = ncol(reads_table),nrow = nrow(reads_table))
-    
-    for (a in 1:ncol(reads_table)) {
-      reads_table_abundance[,a] <- reads_table[,a] / colSums(reads_table)[a]
-      
-    }
-    row.names(reads_table_abundance) = row.names(reads_table)
-    colnames(reads_table_abundance) = colnames(reads_table) 
+    reads_table_abundance <-  sweep(reads_table,2,colSums(reads_table),"/")
     
     # assign vagitype
     reads_table = as.data.frame(t(reads_table_abundance))
@@ -561,6 +554,7 @@ if (sum(ip == "ALDEx2") == 0) {
     
     metadata$Vagitype = mytypes
     row.names(metadata) = row.names(reads_table)
+    colnames(metadata)[1] = factor_1
     
     top_abundant_taxa = rowSums(reads_table_abundance)
     top_abundant_taxa = as.data.frame(sort(top_abundant_taxa, decreasing = T))
@@ -1262,6 +1256,12 @@ if (sum(ip == "ALDEx2") == 0) {
       }
       
     }
+    
+    # heatmap
+    {
+      heatmap_plot(reads_table, metadata, type_th = 0.1, vagitype_num = 5, abundant_taxa_number = 20, width=18, height=8)
+    }
+    
     
     # network
     {
