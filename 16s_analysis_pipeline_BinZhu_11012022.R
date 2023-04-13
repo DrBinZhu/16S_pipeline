@@ -1,4 +1,4 @@
-# edited by Dr. Bin Zhu at Virginia Commonwealth University
+# Edited by Dr. Bin Zhu at Virginia Commonwealth University
 ##### install packages #####
 ip <- as.data.frame(installed.packages())
 ip <- ip$Package
@@ -121,22 +121,7 @@ if (sum(ip == "ALDEx2") == 0) {
     metadata <- metadata[keep,]
     
     # get abundance table
-    trials = c(1: ncol(reads_table))
-    func_1 = function(trial) {
-      reads_table_abundance <- reads_table[,trial] / colSums(reads_table)[trial]
-      return(reads_table_abundance)
-    }
-    reads_table_abundance = mclapply(trials, func_1, mc.cores = mc.cores)
-    reads_table_abundance = unlist(reads_table_abundance)
-    
-    reads_table_abundance_2 = as.data.frame(matrix(data =0, ncol = ncol(reads_table), nrow = nrow(reads_table)))
-    row.names(reads_table_abundance_2) <- row.names(reads_table)
-    colnames(reads_table_abundance_2) <- colnames(reads_table)
-    
-    for (a in 1: ncol(reads_table)) {
-      reads_table_abundance_2[,a] = reads_table_abundance[((a-1)*nrow(reads_table)+1):(a*nrow(reads_table))]
-    }
-    reads_table_abundance = reads_table_abundance_2
+    reads_table_abundance = sweep(reads_table,2,colSums(reads_table),"/")
     
     # species threshold
     keep <- rep(T, nrow(reads_table_abundance))
@@ -165,121 +150,124 @@ if (sum(ip == "ALDEx2") == 0) {
   
   ######### alpha diversity ### alpha_diversity ### input samples in cols ###########
   alpha_diversity = function(reads_table, metadata = NA, factor_name = NA, paired = F, order = NA, rarefy_to = NA) {
-    
-    if (is.na(metadata)[1]) {
-      print('no metadata')
-      return(NA)
-    }
-    
-    if (is.na(factor_name)) {
-      print('no factor name')
-      return(NA)
-    }
-    
-    # rarefy to normalize data
-    reads_table = t(reads_table)
-    
-    if (is.na(rarefy_to)) {
-      reads_table = Rarefy(reads_table, depth = min(rowSums(reads_table)))
-    } else {
-      reads_table = Rarefy(reads_table, depth = rarefy_to)
-    }
-    
-    reads_table <- reads_table$otu.tab.rff
-    reads_table <- as.data.frame(reads_table)
-    
-    # calculate diversity
-    alpha.shannon_diversity <- data.frame(diversity(reads_table))
-    alpha.evenness <- alpha.shannon_diversity/log(specnumber(reads_table))
-    alpha.ovserved_OTU <- data.frame(colSums(t(reads_table) != 0))
-    
-    alpha = data.frame(alpha.shannon = alpha.shannon_diversity, alpha.evenness = alpha.evenness,
-                       alpha.ovserved_OTU = alpha.ovserved_OTU)
-    
-    alpha$alpha.shannon <- alpha.shannon_diversity$diversity.reads_table.
-    alpha$alpha.evenness <- alpha.evenness$diversity.reads_table.
-    alpha$alpha.ovserved_OTU <- alpha.ovserved_OTU$colSums.t.reads_table.....0.
-    
-    metadata = cbind(metadata, alpha)
-    
-    colnames(metadata)[1] = 'factor'
-    
-    metadata = metadata[order(metadata$factor),]
-    
-    if (is.na(order)[1] ) {
-      metadata$factor <- factor(metadata$factor , levels = unique(metadata$factor))
-    } else {
-      metadata$factor <- factor(metadata$factor , levels = order)
-    }
-
-    alpha.shannon = ggplot(metadata, aes(x=factor, y=alpha.shannon)) + geom_violin(trim=T)+
-      geom_boxplot(fill='gray', color="black", outlier.shape=NA, width=0.1) +
-      labs(x = NULL, y = "Shannon index", fill=factor_name)+
-      theme(axis.title = element_text(size = 7), 
-            axis.text = element_text(size = 7), 
-            legend.text = element_text(size = 7), 
-            legend.title = element_text(size = 7),
-            axis.text.x = element_text(angle = 45, vjust = 1, hjust=1))
-    
-    
-    alpha.evenness = ggplot(metadata, aes(x=factor, y=alpha.evenness)) + geom_violin(trim=T)+
-      geom_boxplot(fill='gray', color="black", outlier.shape=NA, width=0.1) +
-      labs(x = NULL, y = "Evenness", fill=factor_name)+
-      theme(axis.title = element_text(size = 7), 
-            axis.text = element_text(size = 7), 
-            legend.text = element_text(size = 7), 
-            legend.title = element_text(size = 7),
-            axis.text.x = element_text(angle = 45, vjust = 1, hjust=1))
-    
-    alpha.ovserved_OTU = ggplot(metadata, aes(x=factor, y=alpha.ovserved_OTU)) + geom_violin(trim=T)+
-      geom_boxplot(fill='gray', color="black", outlier.shape=NA, width=0.1) +
-      labs(x = NULL, y = "Number of observed taxa", fill=factor_name)+
-      theme(axis.title = element_text(size = 7), 
-            axis.text = element_text(size = 7), 
-            legend.text = element_text(size = 7), 
-            legend.title = element_text(size = 7),
-            axis.text.x = element_text(angle = 45, vjust = 1, hjust=1))
-    
-    # calculate significance
-    factor_levels = unique(metadata$factor)
-    n = length(factor_levels)
-    
-    Shannon_sig = as.data.frame(matrix(data = NA, nrow =n, ncol = n))
-    colnames(Shannon_sig) = factor_levels
-    row.names(Shannon_sig) = factor_levels
-    
-    Evenness_sig = as.data.frame(matrix(data = NA, ncol=n, nrow = n))
-    colnames(Evenness_sig) = factor_levels
-    row.names(Evenness_sig) = factor_levels
-    
-    OTU_sig = as.data.frame(matrix(data = NA, ncol=n, nrow = n))
-    colnames(OTU_sig) = factor_levels
-    row.names(OTU_sig) = factor_levels
-    
-    for (a in 1:(n-1)) {
-      for (b in (a+1) : n) {
-        factor_level1 <- subset(metadata,  factor == factor_levels[a],
-                                drop = TRUE)
-        factor_level2 <- subset(metadata,  factor == factor_levels[b],
-                                drop = TRUE)
-        
-        Shannon_sig[a,b] <- wilcox.test(factor_level1$alpha.shannon, 
-                                        factor_level2$alpha.shannon, paired = paired)$p.value
-        Evenness_sig[a,b] <- wilcox.test(factor_level1$alpha.evenness, 
-                                         factor_level2$alpha.evenness, paired = paired)$p.value
-        OTU_sig[a,b] <- wilcox.test(factor_level1$alpha.ovserved_OTU, 
-                                    factor_level2$alpha.ovserved_OTU, paired = paired)$p.value
-        
-      }
-    }
-    output = c(list(alpha = alpha), list(shannon = alpha.shannon), 
-               list(evenness =alpha.evenness) , list(ovserved_OTU =alpha.ovserved_OTU),
-               list(sig_Shannon = Shannon_sig),list(sig_Evenness = Evenness_sig),
-               list(sig_OTU = OTU_sig))
-    
-    return(output)
+  
+  if (is.na(metadata)[1]) {
+    print('no metadata')
+    return(NA)
   }
   
+  if (is.na(factor_name)) {
+    factor_name = ''
+  }
+  
+  # rarefy to normalize data
+  reads_table = t(reads_table)
+  
+  if (is.na(rarefy_to)) {
+    reads_table = Rarefy(reads_table, depth = min(rowSums(reads_table)))
+  } else {
+    reads_table = Rarefy(reads_table, depth = rarefy_to)
+  }
+  
+  reads_table <- reads_table$otu.tab.rff
+  reads_table <- as.data.frame(reads_table)
+  
+  # calculate diversity
+  alpha.shannon_diversity <- data.frame(diversity(reads_table))
+  alpha.evenness <- alpha.shannon_diversity/log(specnumber(reads_table))
+  alpha.ovserved_OTU <- data.frame(colSums(t(reads_table) != 0))
+  
+  alpha = as.data.frame(matrix(data = NA,ncol=3,nrow = nrow(reads_table)))
+  colnames(alpha) = c('alpha.shannon','alpha.evenness','alpha.ovserved_OTU')
+  
+  alpha$alpha.shannon <- alpha.shannon_diversity$diversity.reads_table.
+  alpha$alpha.evenness <- alpha.evenness$diversity.reads_table.
+  alpha$alpha.ovserved_OTU <- alpha.ovserved_OTU$colSums.t.reads_table.....0.
+  
+  metadata = cbind(metadata, alpha)
+  
+  colnames(metadata)[1] = 'factor'
+  
+  metadata = metadata[order(metadata$factor),]
+  
+  if (is.na(order)[1] ) {
+    metadata$factor <- factor(metadata$factor , levels = unique(metadata$factor))
+  } else {
+    metadata$factor <- factor(metadata$factor , levels = order)
+  }
+  
+  alpha.shannon = ggplot(metadata, aes(x=factor, y=alpha.shannon)) + geom_violin(trim=T, aes(fill=factor))+
+    geom_boxplot(fill='white', color="black", outlier.shape=NA, width=0.1) +
+    geom_jitter(size = 0.1)+ theme_bw()+
+    labs(x = NULL, y = "Shannon index", fill=factor_name)+
+    theme(axis.title = element_text(size = 7), 
+          axis.text = element_text(size = 7), 
+          legend.text = element_text(size = 7), 
+          legend.title = element_text(size = 7),
+          axis.text.x = element_text(angle = 45, vjust = 1, hjust=1))
+  
+  
+  alpha.evenness = ggplot(metadata, aes(x=factor, y=alpha.evenness)) + geom_violin(trim=T, aes(fill=factor))+
+    geom_boxplot(fill='white', color="black", outlier.shape=NA, width=0.1) +
+    geom_jitter(size = 0.1)+theme_bw()+
+    labs(x = NULL, y = "Evenness", fill=factor_name)+
+    theme(axis.title = element_text(size = 7), 
+          axis.text = element_text(size = 7), 
+          legend.text = element_text(size = 7), 
+          legend.title = element_text(size = 7),
+          axis.text.x = element_text(angle = 45, vjust = 1, hjust=1))
+  
+  alpha.ovserved_OTU = ggplot(metadata, aes(x=factor, y=alpha.ovserved_OTU)) +geom_violin(trim=T, aes(fill=factor))+
+    geom_boxplot(fill='white', color="black", outlier.shape=NA, width=0.1) +
+    geom_jitter(size = 0.1)+theme_bw()+
+    labs(x = NULL, y = "Number of observed taxa", fill=factor_name)+
+    geom_jitter(size = 0.1)+ 
+    theme(axis.title = element_text(size = 7), 
+          axis.text = element_text(size = 7), 
+          legend.text = element_text(size = 7), 
+          legend.title = element_text(size = 7),
+          axis.text.x = element_text(angle = 45, vjust = 1, hjust=1))
+  
+  # calculate significance
+  factor_levels = unique(metadata$factor)
+  n = length(factor_levels)
+  
+  Shannon_sig = as.data.frame(matrix(data = NA, nrow =n, ncol = n))
+  colnames(Shannon_sig) = factor_levels
+  row.names(Shannon_sig) = factor_levels
+  
+  Evenness_sig = as.data.frame(matrix(data = NA, ncol=n, nrow = n))
+  colnames(Evenness_sig) = factor_levels
+  row.names(Evenness_sig) = factor_levels
+  
+  OTU_sig = as.data.frame(matrix(data = NA, ncol=n, nrow = n))
+  colnames(OTU_sig) = factor_levels
+  row.names(OTU_sig) = factor_levels
+  
+  for (a in 1:(n-1)) {
+    for (b in (a+1) : n) {
+      factor_level1 <- subset(metadata,  factor == factor_levels[a],
+                              drop = TRUE)
+      factor_level2 <- subset(metadata,  factor == factor_levels[b],
+                              drop = TRUE)
+      
+      Shannon_sig[a,b] <- wilcox.test(factor_level1$alpha.shannon, 
+                                      factor_level2$alpha.shannon, paired = paired)$p.value
+      Evenness_sig[a,b] <- wilcox.test(factor_level1$alpha.evenness, 
+                                       factor_level2$alpha.evenness, paired = paired)$p.value
+      OTU_sig[a,b] <- wilcox.test(factor_level1$alpha.ovserved_OTU, 
+                                  factor_level2$alpha.ovserved_OTU, paired = paired)$p.value
+      
+    }
+  }
+  output = c(list(alpha = alpha), list(shannon = alpha.shannon), 
+             list(evenness =alpha.evenness) , list(ovserved_OTU =alpha.ovserved_OTU),
+             list(sig_Shannon = Shannon_sig),list(sig_Evenness = Evenness_sig),
+             list(sig_OTU = OTU_sig))
+  
+  return(output)
+}
+
   
   
   
@@ -291,7 +279,9 @@ if (sum(ip == "ALDEx2") == 0) {
   
   
   ######### beta diversity ### beta_diversity ### input samples in cols; metadata and factor_name are needed; order of factors could be set; ref_group is for setting the reference of bc distance in different groups; can skip from NMDS; output bc distance, within sample distance, distance amoung groups and NMDS #####
-  beta_diversity = function(reads_table, metadata = NA, factor_name = NA, order = NA, NMDS_skip = T, ref_group = NA, rarefy_to = NA, pheatmap_fontsize = 5,treeheight = 50, pheatmap_y = T) {
+  beta_diversity = function(reads_table, metadata = NA, factor_name = NA, order = NA, NMDS_skip = T, 
+                            ref_group = NA, rarefy_to = NA, pheatmap_fontsize = 5,treeheight = 50, 
+                            pheatmap_y = T, mc.cores = parameter_24) {
     #reads_table; metadata = as.character(metadata[,1]); factor_name = factor_1; 
     #order = order; NMDS_skip = F; ref_group = ref_group; 
     #rarefy_to = NA; pheatmap_fontsize = 5; treeheight = 5; 
@@ -361,8 +351,9 @@ if (sum(ip == "ALDEx2") == 0) {
         within_dis$Source = factor(within_dis$Source, levels= order)
       }
       
-      within_dis_p = ggplot(within_dis, aes(x=Source, y=value)) +
-        geom_boxplot(aes(fill = Source),outlier.shape=NA) +
+      within_dis_p = ggplot(within_dis, aes(x=Source, y=value)) + geom_violin(trim=T, aes(fill = Source))+
+        geom_boxplot(fill='white', color="black", outlier.shape=NA, width=0.1) +
+        geom_jitter(size = 0.1)+ theme_bw()+
         labs(x = NULL, y = "Within sample distance", fill=factor_name)+ 
         theme(axis.title = element_text(size = 7), 
               axis.text = element_text(size = 7), 
@@ -370,7 +361,14 @@ if (sum(ip == "ALDEx2") == 0) {
               legend.title = element_text(size = 7),
               axis.text.x = element_text(angle = 45, vjust = 1, hjust=1))
       
-
+      within_dis_p_2 = ggplot(within_dis, aes(x=Source, y=value)) + geom_violin(trim=T, aes(fill = Source))+
+        geom_boxplot(fill='white', color="black", outlier.shape=NA, width=0.1) + theme_bw()+
+        labs(x = NULL, y = "Within sample distance", fill=factor_name)+ 
+        theme(axis.title = element_text(size = 7), 
+              axis.text = element_text(size = 7), 
+              legend.text = element_text(size = 7), 
+              legend.title = element_text(size = 7),
+              axis.text.x = element_text(angle = 45, vjust = 1, hjust=1))
 
       # significance among within sample distance
       
@@ -433,7 +431,7 @@ if (sum(ip == "ALDEx2") == 0) {
           reads_table_2 = reads_table[keep,]
           
           metadata_2 = as.data.frame(metadata_2)
-          pvalue <- adonis2(reads_table_2 ~ ., data = metadata_2, method = "bray")[1,5] 
+          pvalue <- adonis2(reads_table_2 ~ ., data = metadata_2, method = "bray", parallel = mc.cores)[1,5] 
           group_dis_sig[a,b] = pvalue
           group_dis_sig[b,a] = pvalue
         }
@@ -491,7 +489,7 @@ if (sum(ip == "ALDEx2") == 0) {
       
       
       # output
-      output = c(Bray_Curtis = list(Bray_Curtis), group_dis_2_p = list(group_dis_2_p), within_dis_p = list(within_dis_p), 
+      output = c(Bray_Curtis = list(Bray_Curtis), group_dis_2_p = list(group_dis_2_p), within_dis_p = list(within_dis_p), within_dis_p_2 = list(within_dis_p_2),
                  within_dis_sig = list(within_dis_sig), group_dis_sig = list(group_dis_sig), NMDS =list(NMDS), NMDS_2 =list(NMDS_2))
       return(output)
     }
@@ -532,279 +530,6 @@ if (sum(ip == "ALDEx2") == 0) {
     return(vagitype_1)
   }
   
-  
-  
-  
-  
-  ######### bar plot ########## samples on columns ###########
-  barplot <- function(reads_table, type_th = 0.1, taxa_num = 9, VMB = T) { # pass proportion data, samples on rows, taxa on columns.
-
-    if (VMB == F) {
-      reads_table_abundance <- matrix(data =0, ncol = ncol(reads_table),nrow = nrow(reads_table))
-      
-      for (a in 1:ncol(reads_table)) {
-        reads_table_abundance[,a] <- reads_table[,a] / colSums(reads_table)[a]
-        
-      }
-      row.names(reads_table_abundance) = row.names(reads_table)
-      colnames(reads_table_abundance) = colnames(reads_table) 
-      
-      reads_table = as.data.frame(t(reads_table_abundance))
-      
-      reads_table <- reads_table[,apply(reads_table,2,sum) > 0]
-      
-      # assign vagitype
-      mytypes <- apply(reads_table,1,which.max)   # find the most abundant taxa
-      maxprop <- reads_table[matrix(c(1:nrow(reads_table),mytypes), ncol=2)]  # the abundance of the most abundant taxa
-      mytypes <- colnames(reads_table)[mytypes]   # find the name of the most abundant taxa
-      mytypes[maxprop < type_th] <- "No Type"
-      uniqueTypes <- unique(mytypes)
-      
-      top_species = as.data.frame(sort(colSums(reads_table),decreasing=T))
-      
-      keep = mytypes %in% row.names(top_species)[1:taxa_num]
-      
-      mytypes[!keep] = 'Others'
-      
-      if (length(uniqueTypes) < (taxa_num+1)) {
-        myTypeOrder <- c( row.names(top_species)[1:(length(uniqueTypes)-1)], "No Type")
-      } else {
-        myTypeOrder <- c( row.names(top_species)[1:taxa_num], "No Type","Others")
-      }
-      myTypeOrder <- data.frame(typeOrder=c(1:length(myTypeOrder)),row.names=myTypeOrder)
-      
-      reads_table <- 100*reads_table
-      
-      # order data by type then proportion
-      reads_table <- reads_table[order(myTypeOrder[mytypes,],-maxprop),]  # reorder the samples by vagitype and the abundance of dominant taxa
-      barplottypes <- mytypes[order(myTypeOrder[mytypes,],-maxprop)]   # get the list of vagitypes of samples
-      
-      # color
-      mycolors <- rep("gray", ncol(reads_table))
-      
-      color_code_list = c("#3264B8","#FC9800","#C80B0B","#FDFFBA","#55ff42",
-                          "#F7A0A0","#D7A7F1","#337F08","#00FFE8","#9C58FE","#A68300",'gray')
-      
-      color_code_list = color_code_list[1:(taxa_num+1)]
-      
-      for (a in 1:(length(color_code_list)-1)) {
-        mycolors[which(colnames(reads_table) == row.names(top_species)[a])] <- color_code_list[a]
-      }
-      
-      mycolors <- factor(mycolors)
-      mycolordf <- data.frame(mycolors, Taxa=colnames(reads_table))
-      
-      mycolordf2 = mycolordf[mycolordf$mycolors != 'gray',]
-      mycolordf2 = mycolordf2[1:taxa_num,]
-      mycolordf2[(taxa_num+1),1] = "gray"
-      mycolordf2[(taxa_num+1),2] = "Others"
-      mycolors_label = mycolordf2$Taxa[order(mycolordf2$mycolors)]
-      
-      sampleorder <- factor(rownames(reads_table))
-      
-      ggplotdata <- melt(as.matrix(reads_table),  
-                         id.vars=names(reads_table), 
-                         varnames=c("SampleID", "Taxa"), 
-                         value.name="ATprop")
-      ggplotdata$SampleID <- factor(ggplotdata$SampleID, levels=sampleorder)
-      ggplotdata <- merge(ggplotdata, mycolordf, by="Taxa")
-      ggplotdata <- ggplotdata[ggplotdata$ATprop != 0,]
-      
-      p <- ggplot(ggplotdata, aes(SampleID, ATprop, fill=mycolors, group=ATprop)) + 
-        geom_bar(stat="identity", position="stack", width=1) +
-        scale_fill_manual(values = levels(mycolors),labels = mycolors_label) +
-        labs(x="Sample", y="Relative Abundance") + 
-        theme(axis.text.x=element_blank(),
-              axis.ticks=element_blank()) 
-      
-      
-      #,labels = mycolors_label
-      output = c(p = list(p), color = list(mycolordf))
-      return(output)
-    } else {
-      # convert reads to relative abundance
-      {
-        reads_table_abundance <- matrix(data =0, ncol = ncol(reads_table),nrow = nrow(reads_table))
-        for (a in 1:ncol(reads_table)) {
-          reads_table_abundance[,a] <- reads_table[,a] / colSums(reads_table)[a]
-          
-        }
-        row.names(reads_table_abundance) = row.names(reads_table)
-        colnames(reads_table_abundance) = colnames(reads_table) 
-        mypropdata = as.data.frame(t(reads_table_abundance))
-        mypropdata <- mypropdata[,apply(mypropdata,2,sum) > 0]
-      }
-      
-      # assign vagitype
-      {
-        mytypes <- apply(mypropdata,1,which.max)
-        maxprop <- mypropdata[matrix(c(1:nrow(mypropdata),mytypes), ncol=2)]
-        mytypes <- colnames(mypropdata)[mytypes]
-        mytypes[maxprop < type_th] <- "No Type"
-        
-        top_mytypes = as.data.frame(table(mytypes))
-        top_mytypes = top_mytypes[order(top_mytypes$Freq, decreasing = T),]
-        keep = mytypes %in% top_mytypes$mytypes[1:taxa_num]
-        mytypes[!keep] = 'Others'
-      }
-      
-      # set type order
-      {
-        uniqueTypes <- unique(mytypes)
-        lactoTypes <- c(
-          grep("crispatus", uniqueTypes, value=TRUE),
-          grep("jensenii", uniqueTypes, value=TRUE), 
-          grep("gasseri", uniqueTypes, value=TRUE), 
-          grep("iners", uniqueTypes, value=TRUE)
-        ) 
-        
-        nonLactoTypes <- c(
-          grep("Gardnerella", uniqueTypes, value=TRUE), 
-          grep("BVAB", uniqueTypes, value=TRUE), 
-          grep("Sneathia", uniqueTypes, value=TRUE)
-        )
-        
-        myTypeOrder <- c(lactoTypes, nonLactoTypes)
-        myTypeOrder <- c(myTypeOrder, setdiff(uniqueTypes,myTypeOrder))
-        if (length(grep("No Type", myTypeOrder)) > 0) {
-          myTypeOrder <- c(myTypeOrder[-grep("No Type", myTypeOrder)], "No Type")
-        }
-        if (length(grep("Others", myTypeOrder)) > 0) {
-          myTypeOrder <- c(myTypeOrder[-grep("Others", myTypeOrder)], "Others")
-        }
-        myTypeOrder <- data.frame(typeOrder=c(1:length(myTypeOrder)),row.names=myTypeOrder)
-        
-        mypropdata <- 100*mypropdata
-      }
-      
-      # order samples by type then proportion
-      mypropdata <- mypropdata[order(myTypeOrder[mytypes,],-maxprop),]  # myTypeOrder[mytypes,]: find the order number of mytypes in the myTypeOrder list    # order(a,b): order a then order b
-      barplottypes <- mytypes[order(myTypeOrder[mytypes,],-maxprop)]
-      
-      # set color
-      {
-        
-        mycolors <- rep("gray", ncol(mypropdata))
-        # for genus-level
-        mycolors[grep("Lactobacillus",   colnames(mypropdata))]      <- "gray"
-        mycolors[grep("Sneathia",   colnames(mypropdata))]           <- "#9467bd"
-        mycolors[grep("Gardnerella",     colnames(mypropdata))]      <- "#d62728"
-        mycolors[grep("Lachnospiraceae", colnames(mypropdata))]      <- "#ff7f0e"
-        mycolors[grep("BVAB", colnames(mypropdata))]                 <- "#ff7f0e"
-        mycolors[grep("Prevotella",        colnames(mypropdata))]    <- "#1f77b4"
-        mycolors[grep("Atopobium",        colnames(mypropdata))]     <- "#c49c94"
-        mycolors[grep("Fannyhessea",        colnames(mypropdata))]     <- "#c49c94"
-        mycolors[grep("Streptococcus",        colnames(mypropdata))]     <- "#9edae5"
-        mycolors[grep("Dialister",        colnames(mypropdata))]     <- "#dbdb8d"
-        mycolors[grep("Megasphaera",        colnames(mypropdata))]     <- "#f7b6d2"
-        mycolors[grep("Coriobacteriaceae",        colnames(mypropdata))]     <- "#bdc2cc"
-        mycolors[grep("Ureaplasma",        colnames(mypropdata))]     <- "#2ca02c"
-        mycolors[grep("Mobiluncus",        colnames(mypropdata))]     <- "#c4c392"
-        mycolors[grep("TM7",        colnames(mypropdata))]     <- "#e377c2"
-        mycolors[grep("Fusobacterium",        colnames(mypropdata))]     <- "#c8d045"
-        mycolors[grep("Aerococcus",        colnames(mypropdata))]     <- "#a5acaf"
-        mycolors[grep("Coriobacteriales",        colnames(mypropdata))]     <- "#698838"
-        mycolors[grep("Tissierellia",        colnames(mypropdata))]     <- "#ce4946"
-        mycolors[grep("Veillonellaceae",        colnames(mypropdata))]     <- "#a37b5d"
-        mycolors[grep("Gemella",        colnames(mypropdata))]     <- "#d59693"
-        mycolors[grep("Winkia",        colnames(mypropdata))]     <- "#c84b9d"
-        mycolors[grep("Peptoniphilus",        colnames(mypropdata))]     <- "#d06465"
-        
-        mycolors[grep("crispatus",   colnames(mypropdata))]           <- "#fff5aa"
-        mycolors[grep("iners",   colnames(mypropdata))]               <- "#aec7e8"
-        mycolors[grep("gasseri",   colnames(mypropdata))]             <- "#c5b0d5"
-        mycolors[grep("delbrueckii",   colnames(mypropdata))]         <- "black"
-        mycolors[grep("jensenii",   colnames(mypropdata))]            <- "#ffbb78"
-        mycolors[grep("sanguinegens",        colnames(mypropdata))] <- "#ff9896"
-        mycolors[grep("Streptococcus",     colnames(mypropdata))]     <- "orange"
-        mycolors[grep("Prevotella amnii",     colnames(mypropdata))]     <- "#c7c7c7"
-        mycolors[grep("Prevotella_amnii",     colnames(mypropdata))]     <- "#c7c7c7"
-        mycolors[grep("Prevotella bivia",     colnames(mypropdata))]     <- "#17becf"
-        mycolors[grep("Prevotella_bivia",     colnames(mypropdata))]     <- "#17becf"
-        
-        
-        keep = as.data.frame(colSums(mypropdata))
-        keep$x = NA
-        keep = keep[order(keep$`colSums(mypropdata)`, decreasing = T),]
-        taxa_on_legend = row.names(keep)[1:taxa_num]
-        keep = colnames(mypropdata) %in% taxa_on_legend
-        mycolors[!keep] = "gray"
-      } 
-      
-      # ggplot
-      {
-        library(ggplot2)
-        library(reshape2) # for 'melt' in bar plot
-        #p
-        mycolors <- factor(mycolors)
-        mycolordf <- data.frame(mycolors, Taxa=colnames(mypropdata))
-        sampleorder <- factor(rownames(mypropdata))
-        
-        ggplotdata <- melt(as.matrix(mypropdata),  
-                           id.vars=names(mypropdata), 
-                           varnames=c("SampleID", "Taxa"), 
-                           value.name="ATprop")
-        ggplotdata$SampleID <- factor(ggplotdata$SampleID, levels=sampleorder)
-        ggplotdata <- merge(ggplotdata, mycolordf, by="Taxa")   # add color information by searching taxa
-        ggplotdata <- ggplotdata[ggplotdata$ATprop != 0,]
-        
-        p1 = ggplot(ggplotdata, aes(SampleID, ATprop, fill=mycolors, group=ATprop)) + 
-          geom_bar(stat="identity", position="stack", width=1) +
-          scale_fill_manual(values = levels(mycolors)) +
-          labs(x="Sample", y="Relative Abundance") + 
-          theme(axis.text.x=element_blank(), 
-                axis.ticks=element_blank())  
-        
-      } 
-      
-      # legend figure
-      {
-        mycolordf_2 = mycolordf[mycolordf$Taxa %in% taxa_on_legend,]
-        mycolordf_2 = mycolordf_2[!duplicated(mycolordf_2$mycolors),]
-        mycolordf_2$Taxa[mycolordf_2$mycolors == 'gray'] = 'Others'
-        mycolordf_2$value =1
-        
-        taxa_on_legend = data.frame(taxa_on_legend = taxa_on_legend, order = c(1:length(taxa_on_legend)))
-        n = which(str_detect(taxa_on_legend$taxa_on_legend,"crispatus" ))
-        if (length(n)!=0){taxa_on_legend$order[n]=-100}
-        n = which(str_detect(taxa_on_legend$taxa_on_legend,"jensenii" ))
-        if (length(n)!=0){taxa_on_legend$order[n]=-99}
-        n = which(str_detect(taxa_on_legend$taxa_on_legend,"gasseri" ))
-        if (length(n)!=0){taxa_on_legend$order[n]=-98}
-        n = which(str_detect(taxa_on_legend$taxa_on_legend,"iners" ))
-        if (length(n)!=0){taxa_on_legend$order[n]=-97}
-        
-        n = which(str_detect(taxa_on_legend$taxa_on_legend,"Gardnerella" ))
-        if (length(n)!=0){taxa_on_legend$order[n]=-10}
-        n = which(str_detect(taxa_on_legend$taxa_on_legend,"BVAB" ))
-        if (length(n)!=0){taxa_on_legend$order[n]=-9}
-        n = which(str_detect(taxa_on_legend$taxa_on_legend,"Sneathia" ))
-        if (length(n)!=0){taxa_on_legend$order[n]=-8}
-          
-        
-        mycolordf_2$order = NA
-        for (a in 1:nrow(mycolordf_2)) {
-          if (mycolordf_2$Taxa[a] == 'Others') {
-            mycolordf_2$order[a] = nrow(taxa_on_legend) +1
-          } else {
-            mycolordf_2$order[a] = taxa_on_legend$order[which(taxa_on_legend$taxa_on_legend == mycolordf_2$Taxa[a])] 
-          }
-        }
-        mycolordf_2 = mycolordf_2[order(mycolordf_2$order),]
-        
-        mycolordf_2$Taxa = factor(mycolordf_2$Taxa, levels = mycolordf_2$Taxa)
-        mycolordf_2$mycolors = as.character(mycolordf_2$mycolors)
-        
-        p2 = ggplot(mycolordf_2, aes(x = Taxa, y = value, fill = Taxa)) +
-          geom_bar(stat = "identity")+
-          scale_fill_manual(values= mycolordf_2$mycolors)
-      }
-      
-      output = c(p1 = list(p1), p2 = list(p2))
-      return(output)
-    }
-    
-  }
   
   
   
@@ -1062,7 +787,7 @@ if (sum(ip == "ALDEx2") == 0) {
       
       keep = which(row.names(reads_table) %in% taxa_list)
       
-      reads_table_abundance = get_abundance_table(reads_table, mc.cores = 8)
+      reads_table_abundance = sweep(reads_table,2,colSums(reads_table),"/")
       reads_table_2 <- reads_table_abundance[keep,]
       reads_table_2 <- as.data.frame(t(reads_table_2))
       
@@ -1092,63 +817,416 @@ if (sum(ip == "ALDEx2") == 0) {
   One_factor_script = function(reads_table, metadata, ref_group, order, VMB = parameter_28) {
     factor_1 = colnames(metadata)[1]
     # reads table filter
-    data = prepare_reads_table(reads_table, metadata, total_reads_threshold = parameter_21, species_threshold = parameter_22, mc.cores = parameter_24) 
+    data = prepare_reads_table(reads_table, metadata, total_reads_threshold = parameter_21, species_threshold = parameter_22) 
     reads_table = data$reads_table
     metadata = data$metadata
     
     # alpha diversity
-    alpha = alpha_diversity(reads_table, metadata = as.character(metadata[,1]), factor_name = factor_1, paired = F,order = order)
-    alpha$shannon 
-    ggsave('alpha_shannon.pdf',width=parameter_1, height=parameter_2)
-    alpha$evenness  
-    ggsave('alpha_evenness.pdf',width=parameter_1, height=parameter_2)
-    alpha$ovserved_OTU 
-    ggsave('alpha_ovserved_OTU.pdf',width=parameter_1, height=parameter_2)
-    write.csv(alpha$sig_Shannon,'alpha_shannon.csv', row.names = T, quote = F)
-    write.csv(alpha$sig_Evenness,'alpha_evenness.csv', row.names = T, quote = F)
-    write.csv(alpha$sig_OTU,'alpha_ovserved_OTU.csv', row.names = T, quote = F)
+    {
+      alpha = alpha_diversity(reads_table, metadata = metadata, factor_name = factor_1, paired = F,order = order)
+      alpha$shannon 
+      ggsave('alpha_shannon.pdf',width=parameter_1, height=parameter_2)
+      alpha$evenness  
+      ggsave('alpha_evenness.pdf',width=parameter_1, height=parameter_2)
+      alpha$ovserved_OTU 
+      ggsave('alpha_ovserved_OTU.pdf',width=parameter_1, height=parameter_2)
+      write.csv(alpha$sig_Shannon,'alpha_shannon.csv', row.names = T, quote = F)
+      write.csv(alpha$sig_Evenness,'alpha_evenness.csv', row.names = T, quote = F)
+      write.csv(alpha$sig_OTU,'alpha_ovserved_OTU.csv', row.names = T, quote = F)
+    }
     
     # beta diversity
-    beta = beta_diversity(reads_table, metadata = as.character(metadata[,1]), factor_name = factor_1, 
-                          order = order, NMDS_skip = F, ref_group = ref_group, 
-                          rarefy_to = NA, pheatmap_fontsize = 5, treeheight = 5, 
-                          pheatmap_y = T)
-    
-    beta$NMDS_2
-    ggsave('NMDS.pdf',width=parameter_3, height=parameter_4)
-    write.csv(beta$group_dis_sig, 'NMDS_Adonis_test.csv')
-#    dev.off(dev.list()["RStudioGD"])
-    
-    pdf('Within_group_distance.pdf',width=parameter_1, height=parameter_2) 
-    print(beta$within_dis_p)
-    dev.off()
-#    ggsave('Within_group_distance.pdf',width=parameter_1, height=parameter_2)
-    write.csv(beta$within_dis_sig, 'Within_group_distance_MRPP_test.csv')
+    {
+      beta = beta_diversity(reads_table, metadata = as.character(metadata[,1]), factor_name = factor_1, 
+                            order = order, NMDS_skip = F, ref_group = ref_group, 
+                            rarefy_to = NA, pheatmap_fontsize = 5, treeheight = 5, 
+                            pheatmap_y = T)
+      
+      beta$NMDS_2
+      ggsave('NMDS.pdf',width=parameter_3, height=parameter_4)
+      write.csv(beta$group_dis_sig, 'NMDS_Adonis_test.csv')
+      
+      pdf('Within_group_distance.pdf',width=parameter_1, height=parameter_2) 
+      print(beta$within_dis_p)
+      dev.off()
+      
+      pdf('Within_group_distance_2.pdf',width=parameter_1, height=parameter_2) 
+      print(beta$within_dis_p_2)
+      dev.off()
+      write.csv(beta$within_dis_sig, 'Within_group_distance_MRPP_test.csv')
+    }
 
     metadata_level = length(unique(metadata[,1]))
     metadata_level_2 = unique(metadata[,1])
     
     # composition bar plot
-    if (VMB == T) {
-      for (a in 1: metadata_level) {
-        keep = metadata[,1] == metadata_level_2[a]
-        reads_table_2 = reads_table[,keep]
-        
-        barplot_result = barplot(reads_table_2, type_th = 0.3, taxa_num = 20) 
+    {
+     type_th = parameter_14; taxa_num = parameter_13; VMB = parameter_28
+      reads_table_2 = reads_table
+        if (VMB == F) {
+          colnames(metadata)[1] = 'factor_1'
+          
+          # convert reads to relative abundance
+          {
+            reads_table_2_abundance <- sweep(reads_table_2,2,colSums(reads_table_2),"/")
+            mypropdata = as.data.frame(t(reads_table_2_abundance))
+            mypropdata <- mypropdata[,apply(mypropdata,2,sum) > 0]
+          }
+          
+          # assign vagitype
+          {
+            mytypes <- apply(mypropdata,1,which.max)
+            maxprop <- mypropdata[matrix(c(1:nrow(mypropdata),mytypes), ncol=2)]
+            mytypes <- colnames(mypropdata)[mytypes]
+            mytypes[maxprop < type_th] <- "No Type"
+            
+            top_mytypes = as.data.frame(table(mytypes))
+            top_mytypes = top_mytypes[order(top_mytypes$Freq, decreasing = T),]
+            keep = mytypes %in% top_mytypes$mytypes[1:taxa_num]
+            mytypes[!keep] = 'Others'
+          }
+          
+          # set type order
+          {
+            uniqueTypes <- unique(mytypes)
+            lactoTypes <- c(
+              grep("crispatus", uniqueTypes, value=TRUE),
+              grep("jensenii", uniqueTypes, value=TRUE), 
+              grep("gasseri", uniqueTypes, value=TRUE), 
+              grep("iners", uniqueTypes, value=TRUE)
+            ) 
+            
+            nonLactoTypes <- c(
+              grep("Gardnerella", uniqueTypes, value=TRUE), 
+              grep("BVAB", uniqueTypes, value=TRUE), 
+              grep("Sneathia", uniqueTypes, value=TRUE)
+            )
+            
+            myTypeOrder <- c(lactoTypes, nonLactoTypes)
+            myTypeOrder <- c(myTypeOrder, setdiff(uniqueTypes,myTypeOrder))
+            if (length(grep("No Type", myTypeOrder)) > 0) {
+              myTypeOrder <- c(myTypeOrder[-grep("No Type", myTypeOrder)], "No Type")
+            }
+            if (length(grep("Others", myTypeOrder)) > 0) {
+              myTypeOrder <- c(myTypeOrder[-grep("Others", myTypeOrder)], "Others")
+            }
+            myTypeOrder <- data.frame(typeOrder=c(1:length(myTypeOrder)),row.names=myTypeOrder)
+            
+            mypropdata <- 100*mypropdata
+          }
+          
+          # order samples by type then proportion
+          {
+            mypropdata <- mypropdata[order(myTypeOrder[mytypes,],-maxprop),]  # myTypeOrder[mytypes,]: find the order number of mytypes in the myTypeOrder list    # order(a,b): order a then order b
+            barplottypes <- mytypes[order(myTypeOrder[mytypes,],-maxprop)]
+            
+            x = metadata; x$X =NA
+            x = x[match(row.names(mypropdata), row.names(x)),]
+            x1 = order(x$factor_1)
+            x = x[order(x$factor_1),]
+            
+            x$X = sapply(1:nrow(x), function(j) (x$X[j] = which(order == x$factor_1[j])))
+            x1 = order(x$X)
+            x = x[order(x$X),]
+            
+            mypropdata = mypropdata[x1,]
+            row.names(mypropdata) = paste(x$factor_1, row.names(mypropdata), sep='_')
+            barplottypes = barplottypes[x1]
+          }
 
-        pdf(paste0('bar_plot_', metadata_level_2[a], '_1.pdf') ,width=parameter_5, height=parameter_6) 
-        print(barplot_result$p1)
-        dev.off()
-        
-        pdf(paste0('bar_plot_', metadata_level_2[a], '_2.pdf') ,width=parameter_5, height=20) 
-        print(barplot_result$p2)
-        dev.off()
+          # set color
+          {
+            mycolors <- rep(NA, ncol(mypropdata))
+            keep = as.data.frame(colSums(mypropdata))
+            keep$x = NA
+            keep = keep[order(keep$`colSums(mypropdata)`, decreasing = T),]
+            taxa_on_legend = row.names(keep)[1:taxa_num]
+            keep = colnames(mypropdata) %in% taxa_on_legend
+            mycolors[!keep] = "gray"
+            
+            n = sum(is.na(mycolors))
+            mycolors_2 = brewer.pal(n, "Set3")
+            mycolors[is.na(mycolors)] = mycolors_2
+          } 
+          
+          # ggplot
+          {
+            library(ggplot2)
+            library(reshape2) # for 'melt' in bar plot
+            #p
+            mycolors <- factor(mycolors)
+            mycolordf <- data.frame(mycolors, Taxa=colnames(mypropdata))
+            sampleorder <- factor(rownames(mypropdata))
+            
+            ggplotdata <- melt(as.matrix(mypropdata),  
+                               id.vars=names(mypropdata), 
+                               varnames=c("SampleID", "Taxa"), 
+                               value.name="ATprop")
+            ggplotdata$SampleID <- factor(ggplotdata$SampleID, levels=sampleorder)
+            ggplotdata <- merge(ggplotdata, mycolordf, by="Taxa")   # add color information by searching taxa
+            ggplotdata <- ggplotdata[ggplotdata$ATprop != 0,]
+            
+            p1 = ggplot(ggplotdata, aes(SampleID, ATprop, fill=mycolors, group=ATprop)) + 
+              geom_bar(stat="identity", position="stack", width=1) +
+              scale_fill_manual(values = levels(mycolors)) +
+              labs(x="Sample", y="Relative Abundance") + 
+              theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1),
+                    axis.ticks=element_blank())  
+          } 
+          
+          # legend figure
+          {
+            mycolordf_2 = mycolordf[mycolordf$Taxa %in% taxa_on_legend,]
+            mycolordf_2 = mycolordf_2[!duplicated(mycolordf_2$mycolors),]
+            mycolordf_2$Taxa[mycolordf_2$mycolors == 'gray'] = 'Others'
+            mycolordf_2$value =1
+            
+            taxa_on_legend = data.frame(taxa_on_legend = taxa_on_legend, order = c(1:length(taxa_on_legend)))
+            n = which(str_detect(taxa_on_legend$taxa_on_legend,"crispatus" ))
+            if (length(n)!=0){taxa_on_legend$order[n]=-100}
+            n = which(str_detect(taxa_on_legend$taxa_on_legend,"jensenii" ))
+            if (length(n)!=0){taxa_on_legend$order[n]=-99}
+            n = which(str_detect(taxa_on_legend$taxa_on_legend,"gasseri" ))
+            if (length(n)!=0){taxa_on_legend$order[n]=-98}
+            n = which(str_detect(taxa_on_legend$taxa_on_legend,"iners" ))
+            if (length(n)!=0){taxa_on_legend$order[n]=-97}
+            
+            n = which(str_detect(taxa_on_legend$taxa_on_legend,"Gardnerella" ))
+            if (length(n)!=0){taxa_on_legend$order[n]=-10}
+            n = which(str_detect(taxa_on_legend$taxa_on_legend,"BVAB" ))
+            if (length(n)!=0){taxa_on_legend$order[n]=-9}
+            n = which(str_detect(taxa_on_legend$taxa_on_legend,"Sneathia" ))
+            if (length(n)!=0){taxa_on_legend$order[n]=-8}
+            
+            
+            mycolordf_2$order = NA
+            for (a in 1:nrow(mycolordf_2)) {
+              if (mycolordf_2$Taxa[a] == 'Others') {
+                mycolordf_2$order[a] = nrow(taxa_on_legend) +1
+              } else {
+                mycolordf_2$order[a] = taxa_on_legend$order[which(taxa_on_legend$taxa_on_legend == mycolordf_2$Taxa[a])] 
+              }
+            }
+            mycolordf_2 = mycolordf_2[order(mycolordf_2$order),]
+            
+            mycolordf_2$Taxa = factor(mycolordf_2$Taxa, levels = mycolordf_2$Taxa)
+            mycolordf_2$mycolors = as.character(mycolordf_2$mycolors)
+            
+            p2 = ggplot(mycolordf_2, aes(x = Taxa, y = value, fill = Taxa)) +
+              geom_bar(stat = "identity")+
+              scale_fill_manual(values= mycolordf_2$mycolors)
+          }
+          
+          pdf(paste0('bar_plot_1.pdf') ,width=parameter_5, height=parameter_6) 
+          print(p1)
+          dev.off()
+          
+          pdf(paste0('bar_plot_2.pdf') ,width=parameter_5, height=20) 
+          print(p2)
+          dev.off()
+        } else {
+          colnames(metadata)[1] = 'factor_1'
+          
+          # convert reads to relative abundance
+          {
+            reads_table_2_abundance <- sweep(reads_table_2,2,colSums(reads_table_2),"/")
+            mypropdata = as.data.frame(t(reads_table_2_abundance))
+            mypropdata <- mypropdata[,apply(mypropdata,2,sum) > 0]
+          }
+          
+          # assign vagitype
+          {
+            mytypes <- apply(mypropdata,1,which.max)
+            maxprop <- mypropdata[matrix(c(1:nrow(mypropdata),mytypes), ncol=2)]
+            mytypes <- colnames(mypropdata)[mytypes]
+            mytypes[maxprop < type_th] <- "No Type"
+            
+            top_mytypes = as.data.frame(table(mytypes))
+            top_mytypes = top_mytypes[order(top_mytypes$Freq, decreasing = T),]
+            keep = mytypes %in% top_mytypes$mytypes[1:taxa_num]
+            mytypes[!keep] = 'Others'
+          }
+          
+          # set type order
+          {
+            uniqueTypes <- unique(mytypes)
+            lactoTypes <- c(
+              grep("crispatus", uniqueTypes, value=TRUE),
+              grep("jensenii", uniqueTypes, value=TRUE), 
+              grep("gasseri", uniqueTypes, value=TRUE), 
+              grep("iners", uniqueTypes, value=TRUE)
+            ) 
+            
+            nonLactoTypes <- c(
+              grep("Gardnerella", uniqueTypes, value=TRUE), 
+              grep("BVAB", uniqueTypes, value=TRUE), 
+              grep("Sneathia", uniqueTypes, value=TRUE)
+            )
+            
+            myTypeOrder <- c(lactoTypes, nonLactoTypes)
+            myTypeOrder <- c(myTypeOrder, setdiff(uniqueTypes,myTypeOrder))
+            if (length(grep("No Type", myTypeOrder)) > 0) {
+              myTypeOrder <- c(myTypeOrder[-grep("No Type", myTypeOrder)], "No Type")
+            }
+            if (length(grep("Others", myTypeOrder)) > 0) {
+              myTypeOrder <- c(myTypeOrder[-grep("Others", myTypeOrder)], "Others")
+            }
+            myTypeOrder <- data.frame(typeOrder=c(1:length(myTypeOrder)),row.names=myTypeOrder)
+            
+            mypropdata <- 100*mypropdata
+          }
+          
+          # order samples by type then proportion
+          {
+            mypropdata <- mypropdata[order(myTypeOrder[mytypes,],-maxprop),]  # myTypeOrder[mytypes,]: find the order number of mytypes in the myTypeOrder list    # order(a,b): order a then order b
+            barplottypes <- mytypes[order(myTypeOrder[mytypes,],-maxprop)]
+            
+            x = metadata; x$X =NA
+            x = x[match(row.names(mypropdata), row.names(x)),]
+            x1 = order(x$factor_1)
+            x = x[order(x$factor_1),]
+            
+            x$X = sapply(1:nrow(x), function(j) (x$X[j] = which(order == x$factor_1[j])))
+            x1 = order(x$X)
+            x = x[order(x$X),]
+            
+            mypropdata = mypropdata[x1,]
+            row.names(mypropdata) = paste(x$factor_1, row.names(mypropdata), sep='_')
+            barplottypes = barplottypes[x1]
+          }
+          
+          
+          # set color
+          {
+            
+            mycolors <- rep("gray", ncol(mypropdata))
+            # for genus-level
+            mycolors[grep("Lactobacillus",   colnames(mypropdata))]      <- "gray"
+            mycolors[grep("Sneathia",   colnames(mypropdata))]           <- "#9467bd"
+            mycolors[grep("Gardnerella",     colnames(mypropdata))]      <- "#d62728"
+            mycolors[grep("Lachnospiraceae", colnames(mypropdata))]      <- "#ff7f0e"
+            mycolors[grep("BVAB", colnames(mypropdata))]                 <- "#ff7f0e"
+            mycolors[grep("Prevotella",        colnames(mypropdata))]    <- "#1f77b4"
+            mycolors[grep("Atopobium",        colnames(mypropdata))]     <- "#c49c94"
+            mycolors[grep("Fannyhessea",        colnames(mypropdata))]     <- "#c49c94"
+            mycolors[grep("Streptococcus",        colnames(mypropdata))]     <- "#9edae5"
+            mycolors[grep("Dialister",        colnames(mypropdata))]     <- "#dbdb8d"
+            mycolors[grep("Megasphaera",        colnames(mypropdata))]     <- "#f7b6d2"
+            mycolors[grep("Coriobacteriaceae",        colnames(mypropdata))]     <- "#bdc2cc"
+            mycolors[grep("Ureaplasma",        colnames(mypropdata))]     <- "#2ca02c"
+            mycolors[grep("Mobiluncus",        colnames(mypropdata))]     <- "#c4c392"
+            mycolors[grep("TM7",        colnames(mypropdata))]     <- "#e377c2"
+            mycolors[grep("Fusobacterium",        colnames(mypropdata))]     <- "#c8d045"
+            mycolors[grep("Aerococcus",        colnames(mypropdata))]     <- "#a5acaf"
+            mycolors[grep("Coriobacteriales",        colnames(mypropdata))]     <- "#698838"
+            mycolors[grep("Tissierellia",        colnames(mypropdata))]     <- "#ce4946"
+            mycolors[grep("Veillonellaceae",        colnames(mypropdata))]     <- "#a37b5d"
+            mycolors[grep("Gemella",        colnames(mypropdata))]     <- "#d59693"
+            mycolors[grep("Winkia",        colnames(mypropdata))]     <- "#c84b9d"
+            mycolors[grep("Peptoniphilus",        colnames(mypropdata))]     <- "#d06465"
+            
+            mycolors[grep("crispatus",   colnames(mypropdata))]           <- "#fff5aa"
+            mycolors[grep("iners",   colnames(mypropdata))]               <- "#aec7e8"
+            mycolors[grep("gasseri",   colnames(mypropdata))]             <- "#c5b0d5"
+            mycolors[grep("delbrueckii",   colnames(mypropdata))]         <- "black"
+            mycolors[grep("jensenii",   colnames(mypropdata))]            <- "#ffbb78"
+            mycolors[grep("sanguinegens",        colnames(mypropdata))] <- "#ff9896"
+            mycolors[grep("Streptococcus",     colnames(mypropdata))]     <- "orange"
+            mycolors[grep("Prevotella amnii",     colnames(mypropdata))]     <- "#c7c7c7"
+            mycolors[grep("Prevotella_amnii",     colnames(mypropdata))]     <- "#c7c7c7"
+            mycolors[grep("Prevotella bivia",     colnames(mypropdata))]     <- "#17becf"
+            mycolors[grep("Prevotella_bivia",     colnames(mypropdata))]     <- "#17becf"
+            
+            
+            keep = as.data.frame(colSums(mypropdata))
+            keep$x = NA
+            keep = keep[order(keep$`colSums(mypropdata)`, decreasing = T),]
+            taxa_on_legend = row.names(keep)[1:taxa_num]
+            keep = colnames(mypropdata) %in% taxa_on_legend
+            mycolors[!keep] = "gray"
+          } 
+          
+          # ggplot
+          {
+            library(ggplot2)
+            library(reshape2) # for 'melt' in bar plot
+            #p
+            mycolors <- factor(mycolors)
+            mycolordf <- data.frame(mycolors, Taxa=colnames(mypropdata))
+            sampleorder <- factor(rownames(mypropdata))
+            
+            ggplotdata <- melt(as.matrix(mypropdata),  
+                               id.vars=names(mypropdata), 
+                               varnames=c("SampleID", "Taxa"), 
+                               value.name="ATprop")
+            ggplotdata$SampleID <- factor(ggplotdata$SampleID, levels=sampleorder)
+            ggplotdata <- merge(ggplotdata, mycolordf, by="Taxa")   # add color information by searching taxa
+            ggplotdata <- ggplotdata[ggplotdata$ATprop != 0,]
+            
+            p1 = ggplot(ggplotdata, aes(SampleID, ATprop, fill=mycolors, group=ATprop)) + 
+              geom_bar(stat="identity", position="stack", width=1) +
+              scale_fill_manual(values = levels(mycolors)) +
+              labs(x="Sample", y="Relative Abundance") + 
+              theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1),
+                    axis.ticks=element_blank())  
+          } 
+          
+          # legend figure
+          {
+            mycolordf_2 = mycolordf[mycolordf$Taxa %in% taxa_on_legend,]
+            mycolordf_2 = mycolordf_2[!duplicated(mycolordf_2$mycolors),]
+            mycolordf_2$Taxa[mycolordf_2$mycolors == 'gray'] = 'Others'
+            mycolordf_2$value =1
+            
+            taxa_on_legend = data.frame(taxa_on_legend = taxa_on_legend, order = c(1:length(taxa_on_legend)))
+            n = which(str_detect(taxa_on_legend$taxa_on_legend,"crispatus" ))
+            if (length(n)!=0){taxa_on_legend$order[n]=-100}
+            n = which(str_detect(taxa_on_legend$taxa_on_legend,"jensenii" ))
+            if (length(n)!=0){taxa_on_legend$order[n]=-99}
+            n = which(str_detect(taxa_on_legend$taxa_on_legend,"gasseri" ))
+            if (length(n)!=0){taxa_on_legend$order[n]=-98}
+            n = which(str_detect(taxa_on_legend$taxa_on_legend,"iners" ))
+            if (length(n)!=0){taxa_on_legend$order[n]=-97}
+            
+            n = which(str_detect(taxa_on_legend$taxa_on_legend,"Gardnerella" ))
+            if (length(n)!=0){taxa_on_legend$order[n]=-10}
+            n = which(str_detect(taxa_on_legend$taxa_on_legend,"BVAB" ))
+            if (length(n)!=0){taxa_on_legend$order[n]=-9}
+            n = which(str_detect(taxa_on_legend$taxa_on_legend,"Sneathia" ))
+            if (length(n)!=0){taxa_on_legend$order[n]=-8}
+            
+            
+            mycolordf_2$order = NA
+            for (a in 1:nrow(mycolordf_2)) {
+              if (mycolordf_2$Taxa[a] == 'Others') {
+                mycolordf_2$order[a] = nrow(taxa_on_legend) +1
+              } else {
+                mycolordf_2$order[a] = taxa_on_legend$order[which(taxa_on_legend$taxa_on_legend == mycolordf_2$Taxa[a])] 
+              }
+            }
+            mycolordf_2 = mycolordf_2[order(mycolordf_2$order),]
+            
+            mycolordf_2$Taxa = factor(mycolordf_2$Taxa, levels = mycolordf_2$Taxa)
+            mycolordf_2$mycolors = as.character(mycolordf_2$mycolors)
+            
+            p2 = ggplot(mycolordf_2, aes(x = Taxa, y = value, fill = Taxa)) +
+              geom_bar(stat = "identity")+
+              scale_fill_manual(values= mycolordf_2$mycolors)
+          }
+          
+          output = c(p1 = list(p1), p2 = list(p2))
+          
+          pdf(paste0('bar_plot_1.pdf') ,width=parameter_5, height=parameter_6) 
+          print(output$p1)
+          dev.off()
+          
+          pdf(paste0('bar_plot_2.pdf') ,width=parameter_5, height=20) 
+          print(output$p2)
+          dev.off()
+        }
         
       }
-    }
-    
-      
-    
+
     # abundance difference
     if (metadata_level == 2) {
       abundance_result = dif_abundance(reads_table,as.character(metadata[,1]), 
@@ -1211,32 +1289,6 @@ if (sum(ip == "ALDEx2") == 0) {
       
     }
 
-    
-    # network_2
-    if (VMB == T) {
-      for (a in 1: metadata_level) {
-        keep = metadata[,1] == metadata_level_2[a]
-        reads_table_2 = reads_table[,keep]
-        
-        barplot_result = barplot(reads_table_2, type_th = 0.3, taxa_num = 20) 
-        
-        network_result = newwork_rcorr(reads_table_2, correlation = parameter_20, pvalue = 0.05, 
-                                       cor_parameter= 0, style = 1, bar_max = 2, bar_min = -2, 
-                                       pheatmap_fontsize = parameter_18, treeheight = parameter_19, alpha = 0.05)
-        save_pheatmap_pdf <- function(x, filename, width=8, height=8) {
-          stopifnot(!missing(x))
-          stopifnot(!missing(filename))
-          pdf(filename, width=width, height=height)
-          grid::grid.newpage()
-          grid::grid.draw(x$gtable)
-          dev.off()
-        }
-        save_pheatmap_pdf(network_result$p, paste0('network_', metadata_level_2[a], '.pdf') ,width=parameter_9, height=parameter_10)
-        
-      }
-    }
-    
-    
   }
 }
 
@@ -1269,9 +1321,10 @@ if (sum(ip == "ALDEx2") == 0) {
     if (parameter_28 == "Yes") {
       parameter_28 = T
     } else {parameter_28 = F}
+    
     parameter_27 = as.character(parameter_list$value[row.names(parameter_list) == 'parameter_27']);
     if (!is.na(parameter_27)[1]) {
-      parameter_27 = strsplit(parameter_27,',')
+      parameter_27 = strsplit(parameter_27,',|;| ')
       parameter_27 = parameter_27[[1]]
     }
     
@@ -1309,95 +1362,39 @@ if (sum(ip == "ALDEx2") == 0) {
 }
 
 ##### analysize results #####
-
-if (ncol(metadata_all) == 1) {
-  setwd(path_input)
-  path_output = path_input
-  file_list = list.files(path = ".")
-  path_output = paste0(path_input,'/results')
-  path_output_1 = path_output
-  n=1
-  name_1 = 'results'
-  while (sum(!(name_1 %in% file_list)) == 0) {
-    path_output_1 = paste0(path_output,n)
-    name_1 = c(name_1,paste0('results',n))
-    n = n+1
-  }
-  dir.create(path_output_1)
-  setwd(path_output_1)
-  
-  
-  Factor_levels = as.character(unique(metadata_all[,1]))
-  Factor_levels = paste(Factor_levels, collapse = '/')
-  ref_group <- readline(prompt= paste0("Enter a control group (", Factor_levels, '):   '))
-  
-  Factor_levels = as.character(unique(metadata_all[,1]))
-  Factor_levels = Factor_levels[order(Factor_levels)]
-  
-  if (is.na(parameter_27)[1] | sum(Factor_levels %in% parameter_27) != length(Factor_levels)) {
-    order = c(ref_group, Factor_levels[-which(Factor_levels == ref_group)])
-  } else {
-    order = parameter_27
-  }
-  
-  # heatmap
-#  heatmap_plot(reads_table_all, metadata_all,type_th = parameter_14, vagitype_num = parameter_17, 
-#               width=parameter_15, height=parameter_16, abundant_taxa_number = parameter_13) 
-  
-  reads_table = reads_table_all
-  metadata = metadata_all
-  One_factor_script(reads_table, metadata, ref_group, order)
-} else {
-  setwd(path_input)
-  path_output = path_input
-  file_list = list.files(path = ".")
-  path_output = paste0(path_input,'/results')
-  path_output_1 = path_output
-  n=1
-  name_1 = 'results'
-  while (sum(!(name_1 %in% file_list)) == 0) {
-    path_output_1 = paste0(path_output,n)
-    name_1 = c(name_1,paste0('results',n))
-    n = n+1
-  }
-  dir.create(path_output_1)
-  setwd(path_output_1)
-  
-  factor_number = ncol(metadata_all)
-  
-  # heatmap
-  heatmap_plot(reads_table_all, metadata_all,type_th = parameter_14, vagitype_num = parameter_17,
-               width=parameter_15, height=parameter_16, abundant_taxa_number = parameter_13) 
-  
-  for (factor_analysis in seq(factor_number)) {
-    metadata_all_2 = metadata_all
-    metadata_all_2[,1] = metadata_all_2[,factor_analysis]
-    colnames(metadata_all_2)[1] = colnames(metadata_all_2)[factor_analysis]
-    metadata_all_2[,c(2:ncol(metadata_all_2))] = NULL
-
-    file_list = list.files(path = ".")
-    path_output_2 = paste0(path_output_1,'/',colnames(metadata_all_2)[1])
-    if (sum(colnames(metadata_all_2)[1] %in% file_list) == 0) {
-      dir.create(path_output_2)
-      setwd(path_output_2)
-    }
-    
-    Factor_levels = as.character(unique(metadata_all_2[,1]))
-    Factor_levels = paste(Factor_levels, collapse = '/')
-    ref_group <- readline(prompt= paste0("Enter a control group (", Factor_levels, '):   '))
-    
-    Factor_levels = as.character(unique(metadata_all_2[,1]))
-    Factor_levels = Factor_levels[order(Factor_levels)]
-    
-    if (is.na(parameter_27)[1] | sum(Factor_levels %in% parameter_27) != length(Factor_levels)) {
-      order = c(ref_group, Factor_levels[-which(Factor_levels == ref_group)])
-    } else {
-      order = parameter_27
-    }
-    
-    One_factor_script(reads_table_all, metadata_all_2, ref_group, order)
-  }
+setwd(path_input)
+path_output = path_input
+file_list = list.files(path = ".")
+path_output = paste0(path_input,'/results')
+path_output_1 = path_output
+n=1
+name_1 = 'results'
+while (sum(!(name_1 %in% file_list)) == 0) {
+  path_output_1 = paste0(path_output,n)
+  name_1 = c(name_1,paste0('results',n))
+  n = n+1
 }
+dir.create(path_output_1)
+setwd(path_output_1)
+
+
+#ref_group <- readline(prompt= paste0("Enter a control group (", Factor_levels, '):   '))
+
+Factor_levels = as.character(unique(metadata_all[,1]))
+Factor_levels = Factor_levels[order(Factor_levels)]
+
+if (is.na(parameter_27)[1] | sum(Factor_levels %in% parameter_27) != length(Factor_levels)) {
+  order = Factor_levels
+} else {
+  order = parameter_27
+}
+
+ref_group = order[1]
+
+reads_table = reads_table_all
+metadata = metadata_all
+One_factor_script(reads_table, metadata, ref_group, order, VMB = parameter_28)
+
 
 
 
