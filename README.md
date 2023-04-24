@@ -18,5 +18,9 @@ To generate a heatmap, the feature table of the 16S rRNA profiles is converted t
 
 To measure bacterial association, the feature table of the 16S rRNA profiles is normalized by the centered log-ratio transformation. The association between each taxa dyad is measured by Spearman’s correlation. The coefficient and significance of a correlation are quantified by an R- and P-value, respectively. The P-values are adjusted by the Benjamini and Hochberg procedure. The R-values with matched adjusted P-values larger than 0.05 are replaced by zeros to remove insignificant correlations in the next step. Taxa in the VMB are clustered according to the adjusted R-values of the Spearman’s correlation using the ‘pheatmap’ function with default settings in R. For a network with only abundant taxa, only taxa with at least 10% (or 1%) relative abundance in at least 5% (or 15%), respectively, of the samples, are kept in the feature table of the 16S rRNA profiles. All other steps are the same.
 
-# Cite this paper
-Zhu, B., Diachok, C., Edupuganti, L., Edwards, D. J., Donowitz, J. R., Tossas, K., ... & Buck, G. A. The Utility of Voided Urine Samples as a Proxy for the Vaginal Microbiome and for the Prediction of Bacterial Vaginosis. Infectious Microbes & Diseases, 10-1097.
+# Cite these papers
+Zhu, Bin, et al. "The Utility of Voided Urine Samples as a Proxy for the Vaginal Microbiome and for the Prediction of Bacterial Vaginosis." Infectious Microbes & Disease 4.4 (2022): 149-156.
+
+Jari Oksanen et al. vegan: community ecology package. (2020). (Alternatively, input "citation("vegan")" in R to find the most recent version)
+
+Fernandes, Andrew D., et al. "ANOVA-like differential expression (ALDEx) analysis for mixed population RNA-Seq." PloS one 8.7 (2013): e67019.
