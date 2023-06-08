@@ -9,7 +9,7 @@ parameter_1,2.5,alpha_width,alpha
 parameter_6,3,bar_height,bar
 parameter_5,12,bar_width,bar
 parameter_28,No,Vaginal microbiome? Yes/No,bar
-parameter_13,12,show 12 most abundant taxa on the bar plot (value no more than 12 if parameter_28 = No),bar
+parameter_13,12,show 12 most abundant taxa on the bar plot (value no more than 70 if parameter_28 = No),bar
 parameter_4,3,NMDS_height,beta
 parameter_3,4,NMDS_width,beta
 parameter_17,5,vagitype number shown in the heatmap,heatmap
